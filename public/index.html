@@ -3,81 +3,57 @@
 <head>
   <meta charset="UTF-8" />
   <title>Solana Memecoin Scanner</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     body {
-      margin: 0;
-      font-family: system-ui, sans-serif;
       background: #0b0f14;
-      color: #e5e7eb;
+      color: #e6edf3;
+      font-family: monospace;
+      padding: 20px;
     }
-    header {
-      padding: 16px;
-      font-size: 20px;
-      font-weight: bold;
-      background: #111827;
-      border-bottom: 1px solid #1f2933;
+    h1 {
+      color: #4ade80;
     }
-    table {
-      width: 100%;
-      border-collapse: collapse;
+    .status {
+      color: #60a5fa;
+      margin-bottom: 10px;
     }
-    th, td {
-      padding: 12px;
-      border-bottom: 1px solid #1f2933;
-      text-align: left;
-      font-size: 14px;
-    }
-    th {
-      background: #0f172a;
-    }
-    tr:hover {
-      background: #111827;
-    }
-    .muted {
-      color: #9ca3af;
-      font-size: 12px;
+    pre {
+      background: #020617;
+      padding: 15px;
+      border-radius: 8px;
+      overflow-x: auto;
     }
   </style>
 </head>
 <body>
+  <h1>🧠 Solana Memecoin Scanner</h1>
+  <div class="status" id="status">Connecting…</div>
+  <pre id="out">Waiting for tokens...</pre>
 
-<header>🧠 Solana Memecoin Scanner (Live)</header>
+  <script>
+    async function load() {
+      try {
+        const res = await fetch("/api/tokens");
+        const data = await res.json();
 
-<table>
-  <thead>
-    <tr>
-      <th>Name</th>
-      <th>Symbol</th>
-      <th>Source</th>
-      <th>Mint</th>
-    </tr>
-  </thead>
-  <tbody id="rows"></tbody>
-</table>
+        document.getElementById("status").textContent =
+          `Scanner active • ${data.length} tokens detected`;
 
-<script>
-async function refresh() {
-  const res = await fetch("/api/tokens");
-  const data = await res.json();
-  const rows = document.getElementById("rows");
-  rows.innerHTML = "";
+        if (data.length === 0) {
+          document.getElementById("out").textContent =
+            "No new pairs yet.\n\nWaiting for pumpfun / new launches…";
+        } else {
+          document.getElementById("out").textContent =
+            JSON.stringify(data, null, 2);
+        }
+      } catch (e) {
+        document.getElementById("status").textContent =
+          "Backend not reachable";
+      }
+    }
 
-  data.forEach(t => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${t.name}</td>
-      <td>${t.symbol}</td>
-      <td>${t.source}</td>
-      <td class="muted">${t.mint}</td>
-    `;
-    rows.appendChild(tr);
-  });
-}
-
-refresh();
-setInterval(refresh, 3000);
-</script>
-
+    setInterval(load, 3000);
+    load();
+  </script>
 </body>
 </html>
