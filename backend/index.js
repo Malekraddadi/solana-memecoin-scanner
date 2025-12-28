@@ -12,7 +12,19 @@ app.get("/status", (req, res) => {
 // Start WebSocket streaming
 initStreaming();
 
-// Start Express server
+// Start server
 app.listen(PORT, () => {
   console.log(`🚀 Scanner running on port ${PORT}`);
+});
+
+// Keep Node process alive for Railway
+process.stdin.resume();
+
+// Global error handlers
+process.on("uncaughtException", (err) => {
+  console.error("❌ Uncaught Exception:", err);
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("❌ Unhandled Rejection:", reason);
 });
