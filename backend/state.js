@@ -1,1 +1,3 @@
-export const TOKENS = [];
+export const state = {
+  tokens: []
+};
