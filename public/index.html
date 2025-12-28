@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Solana Memecoin Scanner</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, sans-serif;
+      background: #0b0f14;
+      color: #e5e7eb;
+    }
+    header {
+      padding: 16px;
+      font-size: 20px;
+      font-weight: bold;
+      background: #111827;
+      border-bottom: 1px solid #1f2933;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid #1f2933;
+      text-align: left;
+      font-size: 14px;
+    }
+    th {
+      background: #0f172a;
+    }
+    tr:hover {
+      background: #111827;
+    }
+    .muted {
+      color: #9ca3af;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+
+<header>🧠 Solana Memecoin Scanner (Live)</header>
+
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Symbol</th>
+      <th>Source</th>
+      <th>Mint</th>
+    </tr>
+  </thead>
+  <tbody id="rows"></tbody>
+</table>
+
+<script>
+async function refresh() {
+  const res = await fetch("/api/tokens");
+  const data = await res.json();
+  const rows = document.getElementById("rows");
+  rows.innerHTML = "";
+
+  data.forEach(t => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${t.name}</td>
+      <td>${t.symbol}</td>
+      <td>${t.source}</td>
+      <td class="muted">${t.mint}</td>
+    `;
+    rows.appendChild(tr);
+  });
+}
+
+refresh();
+setInterval(refresh, 3000);
+</script>
+
+</body>
+</html>
