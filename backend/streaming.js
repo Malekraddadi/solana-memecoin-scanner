@@ -1,39 +1,52 @@
 import WebSocket from "ws";
 
-// Singleton WebSocket instance to avoid redeclarations
 let ws;
+let heartbeatInterval;
 
+// Initialize streaming connection
 export function initStreaming() {
-  if (ws) return; // Already initialized
+  connectWS();
+}
 
-  const STREAM_URL = "wss://api.mainnet-beta.solana.com"; // Replace with actual Solana streaming URL
-  ws = new WebSocket(STREAM_URL);
+function connectWS() {
+  ws = new WebSocket("wss://solana-streaming.example.com"); // Replace with real Solana WS endpoint
 
   ws.on("open", () => {
     console.log("✅ Connected to SolanaStreaming");
-    // TODO: subscribe to accounts or memecoin transactions
+    startHeartbeat();
   });
 
   ws.on("message", (data) => {
-    console.log("📡 Incoming data:", data.toString());
-    // TODO: parse and analyze memecoin events
+    handleMessage(JSON.parse(data));
   });
 
-  ws.on("close", (code, reason) => {
-    console.log(`⚠️ WS closed (code: ${code}) — reconnecting in 10s`);
-    ws = null;
-    setTimeout(initStreaming, 10000);
+  ws.on("close", (code) => {
+    console.warn(`⚠️ WS closed (code: ${code}) — reconnecting in 10s`);
+    stopHeartbeat();
+    setTimeout(connectWS, 10000);
   });
 
   ws.on("error", (err) => {
-    console.error("❌ WebSocket error:", err);
+    console.error("❌ WebSocket Error:", err.message);
+    ws.close();
   });
+}
 
-  // Heartbeat to prevent Railway container from being considered idle
-  setInterval(() => {
-    console.log("🫀 heartbeat");
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.ping();
+function handleMessage(message) {
+  // Example: handle Solana memecoin events
+  console.log("🪙 Event:", message);
+}
+
+function startHeartbeat() {
+  if (heartbeatInterval) clearInterval(heartbeatInterval);
+  heartbeatInterval = setInterval(() => {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: "heartbeat", timestamp: new Date() }));
+      console.log("🫀 heartbeat");
     }
-  }, 15000);
+  }, 15000); // every 15s
+}
+
+function stopHeartbeat() {
+  if (heartbeatInterval) clearInterval(heartbeatInterval);
 }
