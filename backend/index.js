@@ -1,12 +1,18 @@
 import express from "express";
-import { startStreaming } from "./streaming.js"; // make sure filename matches exactly
+import { initStreaming } from "./streaming.js";
 
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-app.get("/", (req, res) => res.send("Solana Memecoin Scanner Running 🚀"));
+// Health check endpoint
+app.get("/status", (req, res) => {
+  res.json({ status: "Scanner running", timestamp: new Date() });
+});
 
+// Start WebSocket streaming
+initStreaming();
+
+// Start Express server
 app.listen(PORT, () => {
   console.log(`🚀 Scanner running on port ${PORT}`);
-  startStreaming();
 });
