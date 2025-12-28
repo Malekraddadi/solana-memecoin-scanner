@@ -17,7 +17,9 @@ app.get("/api/tokens", (req, res) => {
 
 // frontend
 app.use(express.static("frontend"));
-
+setInterval(() => {
+  console.log("🫀 heartbeat");
+}, 15000);
 app.listen(PORT, () => {
   console.log(`🚀 Scanner running on port ${PORT}`);
 });
