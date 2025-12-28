@@ -10,6 +10,18 @@ if (!API_KEY) {
 
 let ws;
 let heartbeatInterval;
+import WebSocket from "ws";
+
+const API_KEY = process.env.SOLANASTREAMING_API_KEY;
+const WS_URL = "wss://api.solanastreaming.com/";
+
+if (!API_KEY) {
+  console.error("❌ SOLANASTREAMING_API_KEY missing");
+  process.exit(1);
+}
+
+let ws;
+let heartbeatInterval;
 
 export function startStreaming() {
   connect();
@@ -17,27 +29,20 @@ export function startStreaming() {
 
 function connect() {
   ws = new WebSocket(WS_URL, {
-    headers: {
-      "X-API-KEY": API_KEY
-    }
+    headers: { "X-API-KEY": API_KEY }
   });
 
   ws.on("open", () => {
     console.log("✅ Connected to SolanaStreaming");
 
-    const payload = {
-      id: 1,
-      method: "newPairSubscribe",
-      params: {
-        include_pumpfun: true
-      }
-    };
+    ws.send(JSON.stringify({ id: 1, method: "newPairSubscribe", params: { include_pumpfun: true } }));
 
-    ws.send(JSON.stringify(payload));
-
+    // heartbeat to prevent server WS disconnect
     heartbeatInterval = setInterval(() => {
-      console.log("🫀 heartbeat");
-      if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ method: "ping" }));
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ method: "ping" }));
+        console.log("🫀 heartbeat");
+      }
     }, 15_000);
   });
 
@@ -45,25 +50,22 @@ function connect() {
     try {
       const msg = JSON.parse(data.toString());
       if (!msg?.pair?.baseToken) return;
-
       const name = msg.pair.baseToken.info?.metadata?.name || "Unknown";
       const symbol = msg.pair.baseToken.info?.metadata?.symbol || "???";
-
       console.log(`🆕 New token detected: ${name} (${symbol})`);
-    } catch (e) {
-      console.error("⚠️ Failed to parse message");
+    } catch (err) {
+      console.error("⚠️ Failed to parse message", err.message);
     }
   });
 
-  ws.on("close", (code, reason) => {
+  ws.on("close", (code) => {
     console.warn(`⚠️ WS closed (code: ${code}) — reconnecting in 10s`);
     cleanup();
-    setTimeout(connect, 10_000); // give more time before reconnect
+    setTimeout(connect, 10_000); // delay before reconnect
   });
 
   ws.on("error", (err) => {
     console.error("❌ WS error:", err.message);
-    // Do not exit, just reconnect
   });
 }
 
