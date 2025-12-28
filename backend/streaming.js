@@ -1,75 +1,39 @@
 import WebSocket from "ws";
 
-const API_KEY = process.env.SOLANASTREAMING_API_KEY;
-const WS_URL = "wss://api.solanastreaming.com/";
-
-if (!API_KEY) {
-  console.error("❌ SOLANASTREAMING_API_KEY missing");
-  process.exit(1);
-}
-
+// Singleton WebSocket instance to avoid redeclarations
 let ws;
-let heartbeatInterval;
-import WebSocket from "ws";
 
-const API_KEY = process.env.SOLANASTREAMING_API_KEY;
-const WS_URL = "wss://api.solanastreaming.com/";
+export function initStreaming() {
+  if (ws) return; // Already initialized
 
-if (!API_KEY) {
-  console.error("❌ SOLANASTREAMING_API_KEY missing");
-  process.exit(1);
-}
-
-let ws;
-let heartbeatInterval;
-
-export function startStreaming() {
-  connect();
-}
-
-function connect() {
-  ws = new WebSocket(WS_URL, {
-    headers: { "X-API-KEY": API_KEY }
-  });
+  const STREAM_URL = "wss://api.mainnet-beta.solana.com"; // Replace with actual Solana streaming URL
+  ws = new WebSocket(STREAM_URL);
 
   ws.on("open", () => {
     console.log("✅ Connected to SolanaStreaming");
-
-    ws.send(JSON.stringify({ id: 1, method: "newPairSubscribe", params: { include_pumpfun: true } }));
-
-    // heartbeat to prevent server WS disconnect
-    heartbeatInterval = setInterval(() => {
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ method: "ping" }));
-        console.log("🫀 heartbeat");
-      }
-    }, 15_000);
+    // TODO: subscribe to accounts or memecoin transactions
   });
 
   ws.on("message", (data) => {
-    try {
-      const msg = JSON.parse(data.toString());
-      if (!msg?.pair?.baseToken) return;
-      const name = msg.pair.baseToken.info?.metadata?.name || "Unknown";
-      const symbol = msg.pair.baseToken.info?.metadata?.symbol || "???";
-      console.log(`🆕 New token detected: ${name} (${symbol})`);
-    } catch (err) {
-      console.error("⚠️ Failed to parse message", err.message);
-    }
+    console.log("📡 Incoming data:", data.toString());
+    // TODO: parse and analyze memecoin events
   });
 
-  ws.on("close", (code) => {
-    console.warn(`⚠️ WS closed (code: ${code}) — reconnecting in 10s`);
-    cleanup();
-    setTimeout(connect, 10_000); // delay before reconnect
+  ws.on("close", (code, reason) => {
+    console.log(`⚠️ WS closed (code: ${code}) — reconnecting in 10s`);
+    ws = null;
+    setTimeout(initStreaming, 10000);
   });
 
   ws.on("error", (err) => {
-    console.error("❌ WS error:", err.message);
+    console.error("❌ WebSocket error:", err);
   });
-}
 
-function cleanup() {
-  if (heartbeatInterval) clearInterval(heartbeatInterval);
-  if (ws) ws.removeAllListeners();
+  // Heartbeat to prevent Railway container from being considered idle
+  setInterval(() => {
+    console.log("🫀 heartbeat");
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.ping();
+    }
+  }, 15000);
 }
