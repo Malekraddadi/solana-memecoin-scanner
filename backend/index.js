@@ -1,31 +1,26 @@
 import express from "express";
-import path from "path";
-import { fileURLToPath } from "url";
-import { startStream } from "./stream.js";
-import { state } from "./state.js";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { startStreaming } from "./streaming.js";
 
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-// start websocket
-startStream();
+// in-memory store
+const tokens = [];
 
-// serve dashboard
-app.use(express.static(path.join(__dirname, "../public")));
+// expose tokens to streaming module
+startStreaming(tokens);
 
-// api endpoint
+// API
 app.get("/api/tokens", (req, res) => {
-  res.json(state.tokens);
+  res.json(tokens.slice(-50).reverse());
 });
 
-// health
-app.get("/health", (req, res) => {
-  res.json({ ok: true });
-});
+// frontend
+app.use(express.static("frontend"));
 
 app.listen(PORT, () => {
   console.log(`🚀 Scanner running on port ${PORT}`);
 });
+
+// KEEP PROCESS ALIVE (important for Railway)
+setInterval(() => {}, 1 << 30);
