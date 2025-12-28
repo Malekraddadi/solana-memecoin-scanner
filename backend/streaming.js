@@ -1,52 +1,48 @@
-import WebSocket from "ws";
+const WebSocket = require('ws');
+
+const SOLANA_WS_URL = 'wss://api.solanastreaming.com/';
+const API_KEY = 'xxxxxxxxxxxxxxxx'; // Replace with your real API key
 
 let ws;
-let heartbeatInterval;
 
-// Initialize streaming connection
-export function initStreaming() {
-  connectWS();
+function connect() {
+    ws = new WebSocket(SOLANA_WS_URL, undefined, {
+        headers: {
+            'X-API-KEY': API_KEY
+        }
+    });
+
+    ws.on('open', () => {
+        console.log('✅ Connected to SolanaStreaming');
+
+        // Subscribe to new pairs
+        ws.send(JSON.stringify({
+            id: 1,
+            method: 'newPairSubscribe',
+            include_pumpfun: true
+        }));
+    });
+
+    ws.on('message', (data) => {
+        console.log('🪙 Received:', data.toString());
+    });
+
+    ws.on('error', (err) => {
+        console.error('❌ WebSocket Error:', err.message || err);
+    });
+
+    ws.on('close', (code) => {
+        console.warn(`⚠️ WS closed (code: ${code}) — reconnecting in 10s`);
+        setTimeout(connect, 10000);
+    });
 }
 
-function connectWS() {
-  ws = new WebSocket("wss://solana-streaming.example.com"); // Replace with real Solana WS endpoint
+// Export function to start streaming
+function startSolanaStreaming() {
+    connect();
 
-  ws.on("open", () => {
-    console.log("✅ Connected to SolanaStreaming");
-    startHeartbeat();
-  });
-
-  ws.on("message", (data) => {
-    handleMessage(JSON.parse(data));
-  });
-
-  ws.on("close", (code) => {
-    console.warn(`⚠️ WS closed (code: ${code}) — reconnecting in 10s`);
-    stopHeartbeat();
-    setTimeout(connectWS, 10000);
-  });
-
-  ws.on("error", (err) => {
-    console.error("❌ WebSocket Error:", err.message);
-    ws.close();
-  });
+    // Heartbeat every 15s for Railway logs
+    setInterval(() => console.log('🫀 heartbeat'), 15000);
 }
 
-function handleMessage(message) {
-  // Example: handle Solana memecoin events
-  console.log("🪙 Event:", message);
-}
-
-function startHeartbeat() {
-  if (heartbeatInterval) clearInterval(heartbeatInterval);
-  heartbeatInterval = setInterval(() => {
-    if (ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: "heartbeat", timestamp: new Date() }));
-      console.log("🫀 heartbeat");
-    }
-  }, 15000); // every 15s
-}
-
-function stopHeartbeat() {
-  if (heartbeatInterval) clearInterval(heartbeatInterval);
-}
+module.exports = { startSolanaStreaming };
